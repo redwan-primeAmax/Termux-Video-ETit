@@ -27,12 +27,12 @@
 ### ১. রিপোজিটরি ক্লোন করুন
 প্রথমে GitHub-এর সবুজ রঙের **"<> Code"** বাটনে ক্লিক করে প্রোজেক্টের লিঙ্কটি কপি করে নিন। তারপর আপনার টার্মিনালে নিচের কমান্ডটি লিখুন:
 ```bash
-git clone [এখানে কপি করা লিঙ্কটি পেস্ট করুন]
+git clone https://github.com/redwan-primeAmax/Termux-Video-ETit.git
 ```
 
 ### ২. ফোল্ডারে প্রবেশ করুন
 ```bash
-cd [আপনার রিপোজিটরি নাম]
+cd /sdcard/আপনার ফোল্ডার নাম
 ```
 
 ### ৩. অটো-সেটআপ রান করুন
@@ -84,4 +84,3 @@ python sc.py
 ---
 *Developed with "Redwan" for Content Creators.*  
 🌟 **Star this repo if you like it!**
-```
