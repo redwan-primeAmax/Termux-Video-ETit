@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Uploader</title>
+    <style>
+        body {
+            margin: 0; background: #1a1a2e; color: white; font-family: sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+        }
+        .container {
+            text-align: center; background: rgba(255, 255, 255, 0.05);
+            padding: 40px; border-radius: 20px; width: 90%; max-width: 400px;
+        }
+        input[type="file"] {
+            display: block; width: 100%; padding: 10px; margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 8px; color: #ddd;
+        }
+        button {
+            background: #00d2ff; border: none; padding: 12px 30px; color: white;
+            font-weight: bold; border-radius: 50px; cursor: pointer; width: 100%;
+        }
+        #status { margin-top: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video Uploader</h1>
+        <p>একসাথে অনেক ভিডিও সিলেক্ট করুন</p>
+        <input type="file" id="fileInput" multiple accept="video/*">
+        <button id="uploadBtn" onclick="uploadFiles()">Upload Videos</button>
+        <div id="status"></div>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>

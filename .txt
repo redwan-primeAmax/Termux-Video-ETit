@@ -1,0 +1,1 @@
+git remote set-url origin https://redwan-primeAmax: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@github.com/redwan-primeAmax/Termux-Video-ETit.git
