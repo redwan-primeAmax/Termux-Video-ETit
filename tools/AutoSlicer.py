@@ -33,13 +33,16 @@ def slice_video(input_file):
         slice_duration = duration / num_slices
         base_name = os.path.splitext(os.path.basename(input_file))[0]
 
-        print(f"[>] {num_slices}টি স্লাইস তৈরি হচ্ছে...")
+        print(f"[>] {num_slices}টি স্লাইস তৈরি হচ্ছে (High Quality)...")
         for i in range(num_slices):
             start_time = i * slice_duration
             output_file = os.path.join(OUTPUT_DIR, f"{base_name}_part_{i+1}.mp4")
+            
+            # এখানে -c copy বদলে রেন্ডারিং এবং সঠিক বিটরেট দেওয়া হয়েছে যাতে ভিডিও ফ্রিজ না হয়
             ffmpeg_cmd = (
                 f'ffmpeg -y -ss {start_time} -t {slice_duration} -i "{input_file}" '
-                f'-c copy "{output_file}" -loglevel error'
+                f'-c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p '
+                f'-c:a aac -b:a 128k "{output_file}" -loglevel error'
             )
             subprocess.run(ffmpeg_cmd, shell=True)
             
@@ -49,16 +52,8 @@ def slice_video(input_file):
         print(f"[X] এরর: {str(e)}")
 
 if __name__ == "__main__":
-    print("\033[1;35m" + "="*40)
-    print("      🎥 MULTI-VIDEO AUTO SLICER")
-    print("="*40 + "\033[0m")
-
-    if not os.path.exists(CLIPS_DIR):
-        print("\n[!] 'clips' ফোল্ডারটি পাওয়া যায়নি!")
-        sys.exit()
-
+    # বাকি অংশ আগের মতোই থাকবে...
     vids = [f for f in os.listdir(CLIPS_DIR) if f.lower().endswith(('.mp4', '.mkv', '.mov', '.avi'))]
-    
     if not vids:
         print("\n[!] কোনো ভিডিও পাওয়া যায়নি!")
         sys.exit()
@@ -67,20 +62,13 @@ if __name__ == "__main__":
     for idx, vid in enumerate(vids, 1):
         print(f"{idx}. {vid}")
 
-    print("\n\033[1;36m[পরামর্শ] উদা: ১,২,৫ (কমা ব্যবহার করুন)\033[0m")
     choice = input("\nকোন ভিডিওগুলো প্রসেস করবেন? নম্বর লিখুন: ")
-
     try:
         selected_indices = [int(i.strip()) for i in choice.split(',')]
         for index in selected_indices:
             if 1 <= index <= len(vids):
                 target_video = os.path.join(CLIPS_DIR, vids[index-1])
                 slice_video(target_video)
-            else:
-                print(f"\n[!] ভুল নম্বর: {index}")
-                
         print(f"\n\033[1;32m[🎉] সব কাজ শেষ! লোকেশন: {OUTPUT_DIR}\033[0m")
     except ValueError:
-        print("\n[X] শুধু নম্বর এবং কমা দিন!")
-
-    input("\nEnter চাপুন...")
+        print("\n[X] শুধু নম্বর দিন!")
