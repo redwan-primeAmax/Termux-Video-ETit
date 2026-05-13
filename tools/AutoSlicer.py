@@ -2,13 +2,22 @@ import os
 import sys
 import subprocess
 import time
+import shutil
 
 # --- Path Configuration ---
 BASE_DIR = os.path.expanduser("~/Termux-Video-ETit")
 CLIPS_DIR = os.path.join(BASE_DIR, 'clips')
-OUTPUT_DIR = os.path.join(BASE_DIR, 'ready_video')
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# ১. প্রসেসিং হবে টার্মাক্সের ভেতরে (Fastest Speed)
+TEMP_OUTPUT = os.path.join(BASE_DIR, 'temp_ready')
+
+# ২. কাজ শেষ হলে ফাইল যাবে SD Card-এ (Gallery Visibility)
+FINAL_OUTPUT = "/sdcard/Video-ETit-Ready"
+
+# ফোল্ডার তৈরি করা
+os.makedirs(TEMP_OUTPUT, exist_ok=True)
+if not os.path.exists(FINAL_OUTPUT):
+    os.makedirs(FINAL_OUTPUT, exist_ok=True)
 
 def format_time(seconds):
     mins, secs = divmod(int(seconds), 60)
@@ -28,42 +37,35 @@ def process_slicing(video_data):
 
     print("\n" + "─"*45)
     print(f"\033[1;33m🎬 Slicing: \033[1;37m{os.path.basename(input_file)}\033[0m")
-    print(f"\033[1;33m📦 Slices : \033[1;32m{num_slices}\033[0m")
     
     for i in range(num_slices):
         start_time = i * slice_duration
-        output_file = os.path.join(OUTPUT_DIR, f"{base_name}_part_{i+1}.mp4")
+        # প্রথমে টেম্পোরারি ফোল্ডারে সেভ হবে
+        output_file = os.path.join(TEMP_OUTPUT, f"{base_name}_part_{i+1}.mp4")
         
-        # Stream Copy (Bullet Speed)
+        # হাই স্পিড এনকোডিং
         ffmpeg_cmd = (
             f'ffmpeg -y -ss {start_time} -t {slice_duration} -i "{input_file}" '
-            f'-c copy -avoid_negative_ts make_zero -map_metadata 0 '
-            f'-movflags +faststart "{output_file}" -loglevel error'
+            f'-c:v libx264 -preset superfast -crf 23 -c:a aac '
+            f'-avoid_negative_ts make_zero -movflags +faststart "{output_file}" -loglevel error'
         )
         
-        print(f"\033[1;34m[⚡] Part {i+1} of {num_slices}...\033[0m")
+        print(f"\033[1;34m[⚡] Creating Part {i+1} of {num_slices}...\033[0m")
         subprocess.run(ffmpeg_cmd, shell=True)
 
 if __name__ == "__main__":
     os.system('clear')
     print("\033[1;35m" + "╔═══════════════════════════════════════════╗")
-    print("║        BULLET SLICER (Queue Mode)         ║")
+    print("║      FAST PROCESS -> SD CARD EXPORT       ║")
     print("╚═══════════════════════════════════════════╝\033[0m")
     
-    if not os.path.exists(CLIPS_DIR):
-        print(f"\033[1;31m[!] Error: {CLIPS_DIR} not found!\033[0m")
-        sys.exit()
-
     vids = sorted([f for f in os.listdir(CLIPS_DIR) if f.lower().endswith(('.mp4', '.mkv', '.mov', '.avi'))])
-    
-    if not vids:
-        print("\033[1;31m[!] No videos found in clips/ folder!\033[0m")
-        sys.exit()
+    if not vids: sys.exit()
 
     for idx, vid in enumerate(vids, 1):
         print(f"\033[1;37m {idx:02d}. \033[0m{vid}")
 
-    choice = input("\n\033[1;36mSelect video number(s) (e.g. 1,4,6): \033[0m")
+    choice = input("\n\033[1;36mSelect video number(s): \033[0m")
     
     try:
         selected_indices = [int(i.strip()) for i in choice.split(',')]
@@ -74,35 +76,28 @@ if __name__ == "__main__":
             if 0 <= idx < len(vids):
                 video_path = os.path.join(CLIPS_DIR, vids[idx])
                 duration = get_duration(video_path)
+                print(f"\033[1;32m[+] Added: {vids[idx]} ({format_time(duration)})\033[0m")
                 
-                print("\n" + "─"*45)
-                print(f"\033[1;33m🎬 Video   : \033[1;37m{vids[idx]}\033[0m")
-                print(f"\033[1;33m⏱️  Duration: \033[1;32m{format_time(duration)}\033[0m")
-                print("─"*45)
-                
-                # ইনপুট নেওয়ার সময় শুধু প্রথম সংখ্যাটি নেওয়ার ব্যবস্থা
-                slice_input = input(f"\033[1;36m[?] How many slices for this video?: \033[0m").strip()
+                slice_input = input(f"    How many slices?: ").strip()
                 if slice_input.isdigit():
-                    queue.append({
-                        'path': video_path,
-                        'duration': duration,
-                        'slices': int(slice_input)
-                    })
-                else:
-                    print("\033[1;31m[!] Invalid number. Skipping this video.\033[0m")
+                    queue.append({'path': video_path, 'duration': duration, 'slices': int(slice_input)})
         
         if queue:
-            print(f"\n\033[1;32m🚀 Starting Queue Processing ({len(queue)} videos)...\033[0m")
-            start_total = time.time()
+            print(f"\n\033[1;32m🚀 Processing in Background...\033[0m")
+            start_time_all = time.time()
             
             for item in queue:
                 process_slicing(item)
-                
-            end_total = time.time()
-            print(f"\n\033[1;32m✅ ALL DONE! Total Time: {int(end_total - start_total)}s\033[0m")
-            print(f"\033[1;37m📂 Output: ready_video/\033[0m")
-        else:
-            print("\033[1;31m[!] Queue is empty.\033[0m")
-
+            
+            # --- সব কাজ শেষ হলে ফাইল মুভ করা ---
+            print(f"\n\033[1;34m[📤] Exporting to SD Card...\033[0m")
+            for file in os.listdir(TEMP_OUTPUT):
+                shutil.move(os.path.join(TEMP_OUTPUT, file), os.path.join(FINAL_OUTPUT, file))
+            
+            end_time_all = time.time()
+            print(f"\n\033[1;32m✅ SUCCESS! All videos sent to SD Card.\033[0m")
+            print(f"\033[1;37m📂 Folder: /sdcard/Video-ETit-Ready\033[0m")
+            print(f"\033[1;37m⏱️  Time Taken: {int(end_time_all - start_time_all)}s\033[0m")
+        
     except Exception as e:
         print(f"\033[1;31m[X] Error: {str(e)}\033[0m")
