@@ -5,7 +5,7 @@ import subprocess
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 
-# --- Path Configuration (Path 1: User Mode) ---
+# --- Path Configuration ---
 BASE_DIR = os.path.expanduser("~/Termux-Video-ETit")
 APP_DIR = os.path.join(BASE_DIR, 'app')
 TOOLS_DIR = os.path.join(BASE_DIR, 'tools')
@@ -16,10 +16,9 @@ app = Flask(__name__,
             static_folder=APP_DIR, 
             static_url_path='')
 
-# Support for large video uploads
 app.config['MAX_CONTENT_LENGTH'] = None 
 
-# Ensure required folders exist in Path 1
+# Ensure folders exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TOOLS_DIR, exist_ok=True)
 
@@ -34,14 +33,12 @@ def upload_files():
     
     files = request.files.getlist('files')
     uploaded_count = 0
-
     for file in files:
         if file.filename != '':
             filename = secure_filename(file.filename)
             file.save(os.path.join(UPLOAD_FOLDER, filename))
             uploaded_count += 1
-    
-    return jsonify({"status": "success", "message": f"{uploaded_count} files uploaded successfully!"})
+    return jsonify({"status": "success", "message": f"{uploaded_count} files uploaded!"})
 
 def run_tool(filename):
     path = os.path.join(TOOLS_DIR, filename)
@@ -50,7 +47,6 @@ def run_tool(filename):
         return
     try:
         print(f"\n\033[1;32m[🚀] Running {filename}...\033[0m\n")
-        # Run the tool using Python
         subprocess.run([sys.executable, path])
     except Exception as e:
         print(f"\033[1;31m[!] Error: {str(e)}\033[0m")
@@ -59,18 +55,26 @@ def start_flask():
     import logging
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    # Accessible via 127.0.0.1:5000
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
 
 if __name__ == '__main__':
-    # Start Flask server in a separate thread
+    # --- STEP 1: GitHub Auto-Update ---
+    try:
+        print("\n\033[1;34m[🔄] Checking for updates from GitHub...\033[0m")
+        subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=BASE_DIR)
+        print("\033[1;32m[✓] Repository is up to date.\033[0m")
+    except Exception as e:
+        print(f"\033[1;31m[!] Update failed: {str(e)}\033[0m")
+
+    # --- STEP 2: Start Flask Thread ---
     threading.Thread(target=start_flask, daemon=True).start()
     
-    print("\n" + "="*40)
+    print("\n" + "="*45)
     print("🚀 EDITOR CONTROL PANEL ACTIVE")
     print(f"🔗 URL: http://127.0.0.1:5000")
-    print("="*40)
+    print("="*45)
 
+    # --- STEP 3: Control Menu ---
     try:
         while True:
             print("\n--- MENU ---")
@@ -88,7 +92,7 @@ if __name__ == '__main__':
                 print("Exiting...")
                 break
             else:
-                print("Invalid choice, please try again.")
+                print("Invalid choice, try again.")
     except KeyboardInterrupt:
-        print("\nStopping server...")
+        print("\nStopping...")
         sys.exit()
