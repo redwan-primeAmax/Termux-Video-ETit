@@ -2,10 +2,11 @@ import os
 import sys
 import subprocess
 
-# --- পাথ ফিক্স (এই অংশটি গুরুত্বপূর্ণ) ---
-# স্ক্রিপ্টটি যেখানেই থাকুক, সে প্রজেক্টের মেইন ফোল্ডার খুঁজে বের করবে
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) # এটি tools ফোল্ডার
-BASE_DIR = os.path.dirname(SCRIPT_DIR) # এটি মেইন Termux-Video-ETit ফোল্ডার
+# --- পাথ কনফিগারেশন ---
+# তোমার লোকেশন: ~/Termux-Video-ETit/tools/AutoSlicer.py
+# তাই BASE_DIR হবে ~/Termux-Video-ETit
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(SCRIPT_DIR)
 CLIPS_DIR = os.path.join(BASE_DIR, 'clips')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'ready_video')
 
@@ -33,7 +34,7 @@ def slice_video(input_file):
             start_time = i * slice_duration
             output_file = os.path.join(OUTPUT_DIR, f"{base_name}_part_{i+1}.mp4")
             
-            # মোবাইল ক্রাশ রোধ করতে অপ্টিমাইজড FFmpeg কমান্ড
+            # মোবাইল ক্রাশ ও ব্ল্যাক স্ক্রিন রোধ করতে অপ্টিমাইজড কমান্ড
             ffmpeg_cmd = (
                 f'ffmpeg -y -ss {start_time} -t {slice_duration} -i "{input_file}" '
                 f'-c:v libx264 -preset superfast -crf 24 -pix_fmt yuv420p '
@@ -44,7 +45,7 @@ def slice_video(input_file):
             print(f"[>] স্লাইস {i+1}/{num_slices} তৈরি হচ্ছে...")
             subprocess.run(ffmpeg_cmd, shell=True)
             
-        print(f"\033[1;32m[✓] সম্পন্ন! ফাইলগুলো আছে: {OUTPUT_DIR}\033[0m")
+        print(f"\033[1;32m[✓] সম্পন্ন! ফাইলগুলো সেভ হয়েছে: {OUTPUT_DIR}\033[0m")
 
     except Exception as e:
         print(f"[X] এরর: {str(e)}")
@@ -59,10 +60,10 @@ if __name__ == "__main__":
     
     if not vids:
         print(f"\n[!] লোকেশন: {CLIPS_DIR}")
-        print("[!] এই ফোল্ডারে কোনো ভিডিও ফাইল নেই!")
+        print("[!] এই ফোল্ডারে কোনো ভিডিও নেই!")
         sys.exit()
 
-    print("\n--- Auto Slicer (Path Fixed) ---")
+    print("\n--- Auto Slicer (Home Directory Fixed) ---")
     for idx, vid in enumerate(vids, 1):
         print(f"{idx}. {vid}")
 
