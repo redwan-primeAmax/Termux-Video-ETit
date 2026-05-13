@@ -5,8 +5,8 @@ import subprocess
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 
-# পাথ কনফিগারেশন
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# --- Path Configuration (Path 1: User Mode) ---
+BASE_DIR = os.path.expanduser("~/Termux-Video-ETit")
 APP_DIR = os.path.join(BASE_DIR, 'app')
 TOOLS_DIR = os.path.join(BASE_DIR, 'tools')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'clips')
@@ -16,10 +16,10 @@ app = Flask(__name__,
             static_folder=APP_DIR, 
             static_url_path='')
 
-# আনলিমিটেড ফাইল সাইজ সাপোর্ট
+# Support for large video uploads
 app.config['MAX_CONTENT_LENGTH'] = None 
 
-# প্রয়োজনীয় ফোল্ডার নিশ্চিত করা
+# Ensure required folders exist in Path 1
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TOOLS_DIR, exist_ok=True)
 
@@ -30,7 +30,7 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_files():
     if 'files' not in request.files:
-        return jsonify({"status": "error", "message": "কোনো ফাইল পাওয়া যায়নি"}), 400
+        return jsonify({"status": "error", "message": "No files found"}), 400
     
     files = request.files.getlist('files')
     uploaded_count = 0
@@ -38,48 +38,57 @@ def upload_files():
     for file in files:
         if file.filename != '':
             filename = secure_filename(file.filename)
-            # দ্রুত লোকাল ট্রান্সফার
             file.save(os.path.join(UPLOAD_FOLDER, filename))
             uploaded_count += 1
     
-    return jsonify({"status": "success", "message": f"{uploaded_count}টি ফাইল দ্রুত আপলোড হয়েছে!"})
+    return jsonify({"status": "success", "message": f"{uploaded_count} files uploaded successfully!"})
 
 def run_tool(filename):
     path = os.path.join(TOOLS_DIR, filename)
     if not os.path.exists(path):
-        print(f"\n\033[1;31m[X] এরর: tools/{filename} পাওয়া যায়নি!\033[0m")
+        print(f"\n\033[1;31m[X] Error: {path} not found!\033[0m")
         return
     try:
-        print(f"\n\033[1;32m[🚀] {filename} রান হচ্ছে...\033[0m\n")
+        print(f"\n\033[1;32m[🚀] Running {filename}...\033[0m\n")
+        # Run the tool using Python
         subprocess.run([sys.executable, path])
     except Exception as e:
-        print(f"\033[1;31m[!] এরর: {str(e)}\033[0m")
+        print(f"\033[1;31m[!] Error: {str(e)}\033[0m")
 
 def start_flask():
     import logging
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
+    # Accessible via 127.0.0.1:5000
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
 
 if __name__ == '__main__':
+    # Start Flask server in a separate thread
     threading.Thread(target=start_flask, daemon=True).start()
     
     print("\n" + "="*40)
-    print("🚀 এডিটর কন্ট্রোল প্যানেল সচল!")
-    print(f"🔗 লিঙ্ক: http://127.0.0.1:5000")
+    print("🚀 EDITOR CONTROL PANEL ACTIVE")
+    print(f"🔗 URL: http://127.0.0.1:5000")
     print("="*40)
 
     try:
         while True:
-            print("\n--- মেনু ---")
-            print("১. Mode 1 (Custom Cutter)")
-            print("২. Mode 2 (Auto Slicer)")
-            print("০. বন্ধ করুন")
-            choice = input("\nআপনার পছন্দ লিখুন: ")
+            print("\n--- MENU ---")
+            print("1. Mode 1 (Custom Cutter)")
+            print("2. Mode 2 (Auto Slicer)")
+            print("0. Exit")
             
-            if choice == '1': run_tool('CustomCutter.py')
-            elif choice == '2': run_tool('AutoSlicer.py')
-            elif choice in ['0', 'o', '০']: os._exit(0)
-            else: print("\033[1;31m[X] ভুল ইনপুট!\033[0m")
+            choice = input("\nSelect an option: ")
+            
+            if choice == '1':
+                run_tool("QuickSplit.py")
+            elif choice == '2':
+                run_tool("AutoSlicer.py")
+            elif choice == '0':
+                print("Exiting...")
+                break
+            else:
+                print("Invalid choice, please try again.")
     except KeyboardInterrupt:
-        os._exit(0)
+        print("\nStopping server...")
+        sys.exit()
