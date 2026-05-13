@@ -2,11 +2,9 @@ import os
 import sys
 import subprocess
 
-# --- পাথ কনফিগারেশন ---
-# তোমার লোকেশন: ~/Termux-Video-ETit/tools/AutoSlicer.py
-# তাই BASE_DIR হবে ~/Termux-Video-ETit
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(SCRIPT_DIR)
+# --- পাথ ফিক্স: সরাসরি তোমার বর্তমান প্রজেক্ট ফোল্ডারকে টার্গেট করা ---
+# যেহেতু তোমার লোকেশন ~/Termux-Video-ETit
+BASE_DIR = os.path.expanduser("~/Termux-Video-ETit")
 CLIPS_DIR = os.path.join(BASE_DIR, 'clips')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'ready_video')
 
@@ -20,8 +18,8 @@ def slice_video(input_file):
         duration = float(subprocess.check_output(cmd, shell=True))
         
         print(f"\n\033[1;33m[🎞️] প্রসেস হচ্ছে: {os.path.basename(input_file)}\033[0m")
-        
         num_slices = input(f"\033[1;36m[?] কয়টি ভাগে ভাগ করতে চান? (উদা: ৩): \033[0m")
+        
         if not num_slices.isdigit():
             print("[!] ভুল ইনপুট!")
             return
@@ -34,7 +32,7 @@ def slice_video(input_file):
             start_time = i * slice_duration
             output_file = os.path.join(OUTPUT_DIR, f"{base_name}_part_{i+1}.mp4")
             
-            # মোবাইল ক্রাশ ও ব্ল্যাক স্ক্রিন রোধ করতে অপ্টিমাইজড কমান্ড
+            # মোবাইল অপ্টিমাইজড কমান্ড
             ffmpeg_cmd = (
                 f'ffmpeg -y -ss {start_time} -t {slice_duration} -i "{input_file}" '
                 f'-c:v libx264 -preset superfast -crf 24 -pix_fmt yuv420p '
@@ -45,25 +43,26 @@ def slice_video(input_file):
             print(f"[>] স্লাইস {i+1}/{num_slices} তৈরি হচ্ছে...")
             subprocess.run(ffmpeg_cmd, shell=True)
             
-        print(f"\033[1;32m[✓] সম্পন্ন! ফাইলগুলো সেভ হয়েছে: {OUTPUT_DIR}\033[0m")
+        print(f"\033[1;32m[✓] সম্পন্ন! ফাইলগুলো আছে: {OUTPUT_DIR}\033[0m")
 
     except Exception as e:
         print(f"[X] এরর: {str(e)}")
 
 if __name__ == "__main__":
-    # clips ফোল্ডার চেক করা
+    # বর্তমান ডিরেক্টরি চেক করা
     if not os.path.exists(CLIPS_DIR):
         print(f"\n[!] এরর: {CLIPS_DIR} ফোল্ডারটি পাওয়া যায়নি!")
-        sys.exit()
+        # যদি না পাওয়া যায়, তবে বর্তমান ডিরেক্টরির clips খোঁজা
+        CLIPS_DIR = os.path.join(os.getcwd(), 'clips')
         
     vids = [f for f in os.listdir(CLIPS_DIR) if f.lower().endswith(('.mp4', '.mkv', '.mov', '.avi'))]
     
     if not vids:
-        print(f"\n[!] লোকেশন: {CLIPS_DIR}")
-        print("[!] এই ফোল্ডারে কোনো ভিডিও নেই!")
+        print(f"\n[!] চেক করা লোকেশন: {CLIPS_DIR}")
+        print("[!] এই ফোল্ডারে কোনো ভিডিও ফাইল নেই!")
         sys.exit()
 
-    print("\n--- Auto Slicer (Home Directory Fixed) ---")
+    print("\n--- Auto Slicer (Final Path Fix) ---")
     for idx, vid in enumerate(vids, 1):
         print(f"{idx}. {vid}")
 
