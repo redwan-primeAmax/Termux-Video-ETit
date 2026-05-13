@@ -2,10 +2,11 @@ import os
 import sys
 import subprocess
 
-# পাথ কনফিগারেশন
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# --- পাথ ফিক্স (এই অংশটি গুরুত্বপূর্ণ) ---
+# স্ক্রিপ্টটি যেখানেই থাকুক, সে প্রজেক্টের মেইন ফোল্ডার খুঁজে বের করবে
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) # এটি tools ফোল্ডার
+BASE_DIR = os.path.dirname(SCRIPT_DIR) # এটি মেইন Termux-Video-ETit ফোল্ডার
 CLIPS_DIR = os.path.join(BASE_DIR, 'clips')
-# তোমার ফোন ক্রাশ হওয়া কমাতে আউটপুট ডিরেক্টরি টার্মাক্সের ভেতরে রাখাই ভালো
 OUTPUT_DIR = os.path.join(BASE_DIR, 'ready_video')
 
 # আউটপুট ফোল্ডার নিশ্চিত করা
@@ -43,21 +44,25 @@ def slice_video(input_file):
             print(f"[>] স্লাইস {i+1}/{num_slices} তৈরি হচ্ছে...")
             subprocess.run(ffmpeg_cmd, shell=True)
             
-        print(f"\033[1;32m[✓] সম্পন্ন! ফাইলগুলো এখানে আছে: {OUTPUT_DIR}\033[0m")
+        print(f"\033[1;32m[✓] সম্পন্ন! ফাইলগুলো আছে: {OUTPUT_DIR}\033[0m")
 
     except Exception as e:
         print(f"[X] এরর: {str(e)}")
 
 if __name__ == "__main__":
+    # clips ফোল্ডার চেক করা
     if not os.path.exists(CLIPS_DIR):
-        os.makedirs(CLIPS_DIR)
+        print(f"\n[!] এরর: {CLIPS_DIR} ফোল্ডারটি পাওয়া যায়নি!")
+        sys.exit()
         
     vids = [f for f in os.listdir(CLIPS_DIR) if f.lower().endswith(('.mp4', '.mkv', '.mov', '.avi'))]
+    
     if not vids:
-        print("\n[!] 'clips' ফোল্ডারে কোনো ভিডিও পাওয়া যায়নি!")
+        print(f"\n[!] লোকেশন: {CLIPS_DIR}")
+        print("[!] এই ফোল্ডারে কোনো ভিডিও ফাইল নেই!")
         sys.exit()
 
-    print("\n--- Auto Slicer (Mobile Optimized) ---")
+    print("\n--- Auto Slicer (Path Fixed) ---")
     for idx, vid in enumerate(vids, 1):
         print(f"{idx}. {vid}")
 
