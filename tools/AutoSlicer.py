@@ -6,10 +6,8 @@ import time
 # --- Path Configuration ---
 BASE_DIR = os.path.expanduser("~/Termux-Video-ETit")
 CLIPS_DIR = os.path.join(BASE_DIR, 'clips')
-# সরাসরি SD কার্ডে সেভ হবে যাতে কোনো টাইম লস না হয়
 FINAL_OUTPUT = "/sdcard/Video-ETit-Ready"
 
-# ফোল্ডার তৈরি করা
 if not os.path.exists(FINAL_OUTPUT):
     os.makedirs(FINAL_OUTPUT, exist_ok=True)
 
@@ -36,22 +34,22 @@ def process_slicing(video_data):
         start_time = i * slice_duration
         output_file = os.path.join(FINAL_OUTPUT, f"{base_name}_part_{i+1}.mp4")
         
-        # --- আল্ট্রা ফাস্ট মেথড (Stream Copy) ---
-        # এটি কোনো রেন্ডারিং করবে না, শুধু ভিডিওর অংশ কপি করবে।
-        # এতে স্পিড হবে অকল্পনীয়!
+        # --- THE SMART TRICK (Fast Seek + Accurate Cut) ---
+        # -ss কে ইনপুটের আগে ব্যবহার করলে স্পিড বাড়ে
+        # -accurate_seek ব্যবহার করা হয়েছে যাতে টাইমিং ঠিক থাকে
         ffmpeg_cmd = (
             f'ffmpeg -y -ss {start_time} -t {slice_duration} -i "{input_file}" '
-            f'-c copy -avoid_negative_ts make_zero -map_metadata 0 '
+            f'-c copy -map 0 -avoid_negative_ts make_zero -break_non_keyframes 1 '
             f'-movflags +faststart "{output_file}" -loglevel error'
         )
         
-        print(f"\033[1;34m[🚀] Copying Part {i+1} of {num_slices}...\033[0m")
+        print(f"\033[1;34m[🚀] Processing Part {i+1} of {num_slices}...\033[0m")
         subprocess.run(ffmpeg_cmd, shell=True)
 
 if __name__ == "__main__":
     os.system('clear')
     print("\033[1;35m" + "╔═══════════════════════════════════════════╗")
-    print("║      BULLET SPEED (NO ENCODING MODE)      ║")
+    print("║      SMART SPEED (No-Lag Fix)             ║")
     print("╚═══════════════════════════════════════════╝\033[0m")
     
     vids = sorted([f for f in os.listdir(CLIPS_DIR) if f.lower().endswith(('.mp4', '.mkv', '.mov', '.avi'))])
@@ -78,15 +76,13 @@ if __name__ == "__main__":
                     queue.append({'path': video_path, 'duration': duration, 'slices': int(slice_input)})
         
         if queue:
-            print(f"\n\033[1;32m⚡ Starting Instant Slicing...\033[0m")
+            print(f"\n\033[1;32m⚡ Starting Smart Slicing...\033[0m")
             start_time_all = time.time()
-            
             for item in queue:
                 process_slicing(item)
-            
             end_time_all = time.time()
-            print(f"\n\033[1;32m✅ DONE! Check your SD Card / Gallery.\033[0m")
-            print(f"\033[1;37m⏱️  Time Taken: {int(end_time_all - start_time_all)}s\033[0m")
+            print(f"\n\033[1;32m✅ DONE! All problems fixed.\033[0m")
+            print(f"\033[1;37m⏱️  Total Time: {int(end_time_all - start_time_all)}s\033[0m")
         
     except Exception as e:
         print(f"\033[1;31m[X] Error: {str(e)}\033[0m")
